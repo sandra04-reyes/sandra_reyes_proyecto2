@@ -1,0 +1,80 @@
+---
+title: "Proyecto 2 de Cómputo Científico: Análisis ANOVA y Pruebas Post Hoc"
+author: "Sandra Reyes Hernández"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    theme: united
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(car)
+library(multcomp)
+set.seed(2026) # Consistencia en la simulación
+
+# Tamaños muestrales reales del artículo
+n_placebo <- 31; n_atenolol <- 31; n_amlodipine <- 30
+n_thiazide <- 31; n_ramipril <- 30; n_candesartan <- 31
+
+# Simulación de Presión Arterial Sistólica (PAS) post-tratamiento
+pas <- c(
+  rnorm(n_placebo, mean = 145, sd = 15),
+  rnorm(n_atenolol, mean = 135, sd = 11),
+  rnorm(n_amlodipine, mean = 132, sd = 10),
+  rnorm(n_thiazide, mean = 143, sd = 12),
+  rnorm(n_ramipril, mean = 155, sd = 11),
+  rnorm(n_candesartan, mean = 136, sd = 11)
+)
+# Simulación de Colesterol Total post-tratamiento
+colesterol <- c(
+  rnorm(n_placebo, mean = 184, sd = 30),
+  rnorm(n_atenolol, mean = 193, sd = 28),
+  rnorm(n_amlodipine, mean = 174, sd = 28),
+  rnorm(n_thiazide, mean = 200, sd = 32),
+  rnorm(n_ramipril, mean = 187, sd = 27),
+  rnorm(n_candesartan, mean = 184, sd = 28)
+)
+
+# Construcción del Data Frame (Tabla de datos)
+tratamiento <- factor(c(
+  rep("Placebo", n_placebo), rep("Atenolol", n_atenolol),
+  rep("Amlodipina", n_amlodipine), rep("Tiazida", n_thiazide),
+  rep("Ramipril", n_ramipril), rep("Candesartan", n_candesartan)
+))
+
+datos_clinicos <- data.frame(tratamiento, pas, colesterol)
+```
+## Análisis Estadístico para pressión arterial sistolica (PAS)
+```{r anova_pas}
+anova_pas <- aov(pas ~ tratamiento, data = datos_clinicos)
+summary(anova_pas)
+```
+#### prueba de tukey (HSD)
+```{r tukey_pas}
+tukey_pas <- stats::TukeyHSD(anova_pas)
+print(tukey_pas)
+```
+#### prueba de Bonferroni
+```{r bonferroni_pas}
+pairwise.t.test(datos_clinicos$pas, datos_clinicos$tratamiento, p.adjust.method = "bonferroni")
+```
+### Análisis Estadístico para colesterol total
+```{r anova_col}
+anova_col <- aov(colesterol ~ tratamiento, data = datos_clinicos)
+summary(anova_col)
+```
+#### pruebas post hoc para colesterol
+```{r tukey_col}
+stats::TukeyHSD(anova_col)
+```
+#### prueba bonferroni
+```{r bonferroni_col}
+pairwise.t.test(datos_clinicos$colesterol, datos_clinicos$tratamiento, p.adjust.method = "bonferroni")
+```
+## ¿Por qué utilizaron Bonferroni en lugar de Tukey?
+Por la el número de comparaciones, ya que tukey es para evaluar todas las combinaciones posibles en pares, es decir todos contra todos.Si el diseño experimental original solo contemplara comparar cada fármaco activo únicamente contra el grupo placebo, el ajuste Bonferroni penalizaría menos y aportaría mayor potencia estadística que tukey.
+Además es estricto ajuste que tiene Bonferroni proporciona una garantía de seguridad estadistíca superior.
